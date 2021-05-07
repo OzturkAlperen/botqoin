@@ -1,0 +1,137 @@
+
+.heading {
+  font-family: "Ubuntu", sans-serif;
+  background: #efb90a;
+  color: #0c0e11;
+  border-radius: 12px;
+  padding: 5px 15px;
+  width: auto;
+  height: 80px;
+  margin: 15px 5px;
+}
+
+.paragraph {
+  font-family: "Ubuntu", sans-serif;
+  color: #10CB81;
+}
+
+.versiontag {
+  text-align: center;
+  font-family: "Ubuntu", sans-serif;
+  background: #12161B;
+  color: #F0B90A;
+  border-radius: 12px;
+  border: none;
+  width: 100px;
+  height: 60px;
+  margin: 10px;
+  line-height: 60px;
+}
+
+.messagebox {
+  font-family: "Ubuntu", sans-serif;
+  background: #12161B;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 10px;
+  width: 260px;
+  height: 280px;
+  margin: 16px;
+  float: left;
+}
+
+.floatbox {
+  font-family: "Ubuntu", sans-serif;
+  background: #12161B;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 10px;
+  margin: 5px;
+  width: 500px;
+  height: 500px;
+}
+
+.menubutton {
+  text-align: center;
+  font-family: "Ubuntu", sans-serif;
+  font-size: 16px;
+  background: #12161b;
+  color: #ffb142;
+  border-radius: 12px;
+  width: 100px;
+  height: 60px;
+  margin: 10px;
+  border: none;
+  transition: transform 0.25s;
+}
+
+.menubutton:hover {
+  transform: scale(1.1,1.1);
+  transition: transform 0.25s;
+  opacity: 0.98;
+}
+
+.generalbutton {
+  text-align: center;
+  transition: transform 0.25s, background 0.5s;
+  transition-duration: 0.25s;
+  color: #0C0E11;
+  border-radius: 6px;
+  border: none;
+  display: block;
+  box-sizing: border-box;
+  margin: 6px 0;
+
+}
+
+.generalbutton:hover {
+  transition: transform 0.25s, background 0.5s;
+  transition-duration: 0.25s;
+  transform: scale(1.02,1.02);
+}
+
+.generalinput {
+  transition: background 0.5s, width 1s, opacity 5s;
+  transition-duration: 0.25s;
+  color: #0C0E11;
+  background-repeat: no-repeat;
+  border-radius: 6px;
+  border: none;
+  display: block;
+  box-sizing: border-box;
+  margin: 6px 0;
+}
+
+.button2 {
+  background: #f5475d;
+  color: #12161b;
+  border-radius: 6px;
+  height: 50px;
+  margin: 20px;
+  border: none;
+  float: bottom;
+  width: 640px;
+  font-size: 18px;
+}
+
+.link {
+  font-family: "Ubuntu", sans-serif;
+  color: #ffb142;
+}
+
+.body {
+  background: #0c0e11;
+}
+
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+  color: #12161b;
+  opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+  color: #12161b;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+  color: #12161b;
+}
