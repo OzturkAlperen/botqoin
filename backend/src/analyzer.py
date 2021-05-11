@@ -16,7 +16,7 @@ def message_analyzer(incoming_message: str, binance_trade_flag: bool, kucoin_tra
     def finder(find):
         return [wanted_word for wanted_word in splitted_message if find in wanted_word][0]
 
-    def find_in_binance_url(search_in, is_single_word):
+    """def find_in_binance_url(search_in, is_single_word):
         if not search_in.find("binance.com") == -1:
             if not is_single_word:
                 w = finder("binance.com")
@@ -26,7 +26,7 @@ def message_analyzer(incoming_message: str, binance_trade_flag: bool, kucoin_tra
             if not t.find("?layout=basic") == -1:
                 tsl = t.replace("?layout=basic", "")
             else:
-                tsl = temp
+                tsl = t
             ts = tsl.replace("_", "").upper()
             if ts in symbol_dictionary:
                 return ts
@@ -44,7 +44,7 @@ def message_analyzer(incoming_message: str, binance_trade_flag: bool, kucoin_tra
             if ts in symbol_dictionary:
                 return temp_symbol
             else:
-                return ""
+                return """""
 
     while indicator_index < len(indicators):
         if not incoming_message.find(indicators[indicator_index]) == -1:
@@ -87,7 +87,7 @@ def message_analyzer(incoming_message: str, binance_trade_flag: bool, kucoin_tra
     else:
         pass
 
-    if selected_symbol == "":
+    """if selected_symbol == "":
         selected_symbol = find_in_binance_url(incoming_message, is_single_word=False)
 
     if selected_symbol == "":
@@ -103,7 +103,7 @@ def message_analyzer(incoming_message: str, binance_trade_flag: bool, kucoin_tra
                 word_url = resp.url
                 selected_symbol = find_in_binance_url(word_url, is_single_word=True)
                 if selected_symbol == "":
-                    selected_symbol = find_in_kucoin_url(word_url, is_single_word=True)
+                    selected_symbol = find_in_kucoin_url(word_url, is_single_word=True)"""
 
     if selected_symbol == "":
         if not incoming_message.find("/") == -1:

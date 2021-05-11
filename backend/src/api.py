@@ -21,17 +21,16 @@ import time
 
 
 origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
+    "http://localhost:8000",
 ]
 
 api = FastAPI(title="botqoin",
               description="One bot to rule them all.",
               version="0.2.0",
-              docs_url="/api/docs",
-              redoc_url="/api/redoc")
+              docs_url='/api/docs',
+              redoc_url='/api/redoc',
+              openapi_url='/api/openapi.json',
+              swagger_ui_oauth2_redirect_url='/api/docs/oauth2-redirect')
 
 api.add_middleware(
     CORSMiddleware,
@@ -89,6 +88,7 @@ class DiscordManager:
                 symbol = message_analyzer(message.content, binance_trade_flag, kucoin_trade_flag, symbol_dictionary,
                                           trade_pair)
                 if symbol != "":
+                    print(symbol)
                     current_message = message.content
                     current_symbol = symbol
                     await initialize_trade(symbol)
@@ -231,7 +231,7 @@ async def get_auth0_access_token():
 async def trader_start(credentials):
     global binance_client, kucoin_client, discord_channel_dictionary, telegram_channel_dictionary
 
-    with open("../resources/channels.json") as channels:
+    with open("/home/ubuntu/botqoin/backend/resources/channels.json") as channels:
         channel_list = json.load(channels)
         discord_channel_dictionary = channel_list["discord_channels"]
         telegram_channel_dictionary = channel_list["telegram_channels"]
@@ -670,7 +670,7 @@ async def initialize_trade(symbol):
         return "Trade Initiated Before"
 
 
-@api.websocket("/ws/{client_id}")
+@api.websocket("/api/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket_manager.connect(websocket)
     previous_message = "previous_message"
@@ -681,8 +681,13 @@ async def websocket_endpoint(websocket: WebSocket):
             if current_message != previous_message or\
                current_symbol != previous_symbol or\
                current_status != previous_status:
+                previous_message = current_message
+                previous_symbol = current_symbol
+                previous_status = current_status
                 data = json.dumps({"message": current_message, "symbol": current_symbol, "status": current_status})
                 await websocket_manager.send_personal_message(data, websocket)
+                await asyncio.sleep(.25)
+            else:
                 await asyncio.sleep(.25)
     except ConnectionClosedError:
         websocket_manager.disconnect(websocket)
@@ -717,14 +722,14 @@ async def save_credentials(credentials: Credentials, user: Auth0User = Security(
 
 @api.get("/api/get_channels", dependencies=[Depends(auth.implicit_scheme), Depends(auth.get_user)])
 async def get_channels():
-    with open("../resources/channels.json") as channels_json:
+    with open("/home/ubuntu/botqoin/backend/resources/channels.json") as channels_json:
         channels = json.load(channels_json)
     return channels
 
 
 @api.post("/api/save_channels", dependencies=[Depends(auth.implicit_scheme), Depends(auth.get_user)])
 async def save_channels(channels: Channels):
-    with open("../resources/channels.json", "w") as channels_json:
+    with open("/home/ubuntu/botqoin/backend/resources/channels.json", "w") as channels_json:
         json.dump(json.loads(channels.json()), channels_json)
     return {"message": "success"}
 
@@ -753,6 +758,7 @@ async def startup(bot_info: BotInfo, user: Auth0User = Security(auth.get_user)):
            current_status
 
     meta = await get_credentials(user=user)
+    print(bot_info)
 
     trade_pair = bot_info.trade_pair
     sell_method = bot_info.sell_method
@@ -789,16 +795,6 @@ async def closedown():
     current_status = ""
 
     return {"message": "success"}
-
-
-@api.get("/secure", dependencies=[Depends(auth.implicit_scheme)])
-async def get_secure(user: Auth0User = Security(auth.get_user)):
-    return {"message": f"{user}", "data": "data"}
-
-
-@api.get("/public")
-async def get_public():
-    return {"message": "msg"}
 
 
 event_loop = asyncio.get_event_loop()

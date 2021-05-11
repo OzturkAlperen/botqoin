@@ -1,10 +1,14 @@
 import React, {useEffect, useState} from "react";
 import {useAuth0} from "@auth0/auth0-react";
-import {Link} from "react-router-dom";
+import { motion } from "framer-motion";
+import OptionButton from "../interfaces/option-button";
+import KeyIcon from "../../assets/icons/key.svg";
+import TagIcon from "../../assets/icons/tag.svg";
+import Guide from "../interfaces/user-guide";
 
 const Settings = () => {
 
-    const { user, getAccessTokenSilently } = useAuth0();
+    const { getAccessTokenSilently } = useAuth0();
 
     const [isAbort, setIsAbort] = useState(false)
 
@@ -20,57 +24,33 @@ const Settings = () => {
     const [inputID, setInputID] = useState("")
     const [inputName, setInputName] = useState("")
 
-    const [binanceButtonColor, setBinanceButtonColor] = useState("#F5475D")
-    const [kucoinButtonColor, setKucoinButtonColor] = useState("#F5475D")
+    const pageVariants = {
+        initial: {
+            opacity: 0,
+            },
+        in: {
+            opacity: 1,
+        },
+        out: {
+            opacity: 0,
+        }
+    }
 
-    const discordButtonStyle = {
-        background: `${binanceButtonColor}`,
-        fontSize: "14px",
-        width: "49%",
-        height: "35px",
+    const pageTransition = {
+        duration: 0.6
     }
-    const telegramButtonStyle = {
-        backgroundColor: `${kucoinButtonColor}`,
-        fontSize: "14px",
-        width: "49%",
-        height: "35px",
-    }
+
     const addButtonStyle = {
         backgroundColor: "#10CB81",
         fontSize: "14px",
         width: "100%",
-        height: "50px",
+        height: "40px",
     }
     const saveButtonStyle = {
         backgroundColor: "#10CB81",
         fontSize: "14px",
         width: "100%",
-        height: "70px",
-    }
-    const inputFieldStyle = {
-        backgroundImage: "url('./assets/icons/key.png')",
-        backgroundSize: "20px",
-        backgroundPosition: "5px 8px",
-        backgroundRepeat: "no-repeat",
-        backgroundColor: "#efb90a",
-        paddingLeft: "30px",
-        height: "35px",
-        fontSize: "15px",
-        width: "100%",
-    }
-    const channelBoxStyle = {
-        fontFamily: "Ubuntu, sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "flex-start",
-        backgroundColor: "#12161B",
-        color: "#ffffff",
-        borderRadius: "12px",
-        padding: "10px",
-        margin: "1%",
-        float: "left",
-        minWidth: "300px",
-        minHeight: "300px",
+        height: "40px",
     }
 
     useEffect(() => {
@@ -234,16 +214,8 @@ const Settings = () => {
         setTelegramChannelDictionary(newTelegramChannelDictionary)
     }
 
-    const handleDiscordButtonClick = () => {
-        setBinanceButtonColor("#10CB81")
-        setKucoinButtonColor("#F5475D")
-        setPlatform("Discord")
-    }
-
-    const handleTelegramButtonClick = () => {
-        setKucoinButtonColor("#10CB81")
-        setBinanceButtonColor("#F5475D")
-        setPlatform("Telegram")
+    const handlePlatformChange = (value) => {
+        setPlatform(value)
     }
 
     const handleInputIDChange = (value) => {
@@ -255,41 +227,48 @@ const Settings = () => {
     }
 
     const ChannelBox = (props) => {
-        return <div style={channelBoxStyle}>
-                {Object.entries(props.dictionary).map((keyvalue) => {
-                    return <p onClick={props.removeFunction} id={keyvalue[0]}>{keyvalue[1] + ": "+ keyvalue[0]}</p>
-                })}
-               </div>
+        return( <div className="displaybox" style={{flexDirection: "column"}}>
+                    <h1 style={{cursor: "default"}}>{props.name}</h1>
+                    <p style={{cursor: "default"}}>━━━━━━━━━━━━━━━━━</p>
+                    {Object.entries(props.dictionary).map((keyvalue) => {
+                        return <p onClick={props.removeFunction} id={keyvalue[0]}>{keyvalue[1] + ": "+ keyvalue[0]}</p>
+                    })}
+               </div>)
     }
 
     return(
-        <div>
-            <Link to="/monitor">
-                    <button className="menubutton" style={{position: "absolute", right: "150px", top: "20px"}}>Monitor</button>
-            </Link>
-            <ChannelBox removeFunction={removeDiscordChannel} dictionary={discordChannelDictionary}/>
-            <ChannelBox removeFunction={removeTelegramChannel} dictionary={telegramChannelDictionary}/>
-            <div className="messagebox">
+        <motion.div variants={pageVariants} transition={pageTransition} exit="out" animate="in" initial="initial" style={{display: "flex", justifyContent: "center", alignItems: "center", alignContent: "stretch", flexWrap: "wrap"}}>
+            <ChannelBox name="Discord Channels" removeFunction={removeDiscordChannel} dictionary={discordChannelDictionary}/>
+            <ChannelBox name="Telegram Channels" removeFunction={removeTelegramChannel} dictionary={telegramChannelDictionary}/>
+            <div className="displaybox">
+                <h1 style={{cursor: "default"}}>Edit Channels</h1>
+                <p style={{cursor: "default"}}>━━━━━━━━━━━━━━━━━</p>
+                <OptionButton buttons={{"Discord": "Discord", "Telegram": "Telegram"}} callback={handlePlatformChange} buttonClass="platformbutton"/>
                 <span style={{display: "flex", justifyContent: "space-between"}}>
-                    <button className="generalbutton" style={discordButtonStyle} onClick={handleDiscordButtonClick}>Discord</button>
-                    <button className="generalbutton" style={telegramButtonStyle} onClick={handleTelegramButtonClick}>Telegram</button>
+                    <input className="botinput" style={{backgroundImage: `url(${KeyIcon})`}} onChange={handleInputIDChange} placeholder="Channel ID/Username"/>
                 </span>
-                <input className="generalinput" style={inputFieldStyle} onChange={handleInputIDChange} placeholder="Channel ID/Username"/>
-                <input className="generalinput" style={inputFieldStyle} onChange={handleInputNameChange} placeholder="Channel Name/Info"/>
-                <button className="generalbutton" style={addButtonStyle} onClick={addChannels}>Add Channel</button>
-                <button className="generalbutton" style={saveButtonStyle} onClick={saveChannels}>Save Channels</button>
+                <span style={{display: "flex", justifyContent: "space-between"}}>
+                    <input className="botinput" style={{backgroundImage: `url(${TagIcon})`}} onChange={handleInputNameChange} placeholder="Channel Name/Info"/>
+                </span>
+                <span style={{display: "flex", justifyContent: "space-between"}}>
+                    <button className="generalbutton" style={addButtonStyle} onClick={addChannels}>Add Channel</button>
+                </span>
+                <span style={{display: "flex", justifyContent: "space-between"}}>
+                    <button className="generalbutton" style={saveButtonStyle} onClick={saveChannels}>Save Channels</button>
+                </span>
             </div>
-            <div className="messagebox">
-                <h1>{user.name}</h1>
-                <p>{user.email}</p>
-                <input className="generalinput" value={binanceapikey} placeholder="Binance API Key" onChange={(event) => {setBinanceAPIKey(event.target.value)}}/>
-                <input className="generalinput" value={binanceapisecret} placeholder="Binance API Secret" onChange={(event) => {setBinanceAPISecret(event.target.value)}}/>
-                <input className="generalinput" value={kucoinapikey} placeholder="Kucoin API Key" onChange={(event) => {setKucoinAPIKey(event.target.value)}}/>
-                <input className="generalinput" value={kucoinapisecret} placeholder="Kucoin API Secret" onChange={(event) => {setKucoinAPISecret(event.target.value)}}/>
-                <input className="generalinput" value={kucoinapipassphrase} placeholder="Kucoin API Passphrase" onChange={(event) => {setKucoinAPIPassphrase(event.target.value)}}/>
-                <button className="generalbutton" onClick={saveCredentials}>Save Credentials</button>
+            <div className="displaybox">
+                <h1 style={{cursor: "default"}}>Exchange Credentials</h1>
+                <p style={{cursor: "default"}}>━━━━━━━━━━━━━━━━━</p>
+                <input className="botinput" style={{backgroundImage: `url(${KeyIcon})`}} value={binanceapikey} placeholder="Binance API Key" onChange={(event) => {setBinanceAPIKey(event.target.value)}}/>
+                <input className="botinput" style={{backgroundImage: `url(${KeyIcon})`}} value={binanceapisecret} placeholder="Binance API Secret" onChange={(event) => {setBinanceAPISecret(event.target.value)}}/>
+                <input className="botinput" style={{backgroundImage: `url(${KeyIcon})`}} value={kucoinapikey} placeholder="Kucoin API Key" onChange={(event) => {setKucoinAPIKey(event.target.value)}}/>
+                <input className="botinput" style={{backgroundImage: `url(${KeyIcon})`}} value={kucoinapisecret} placeholder="Kucoin API Secret" onChange={(event) => {setKucoinAPISecret(event.target.value)}}/>
+                <input className="botinput" style={{backgroundImage: `url(${KeyIcon})`}} value={kucoinapipassphrase} placeholder="Kucoin API Passphrase" onChange={(event) => {setKucoinAPIPassphrase(event.target.value)}}/>
+                <button className="generalbutton" style={saveButtonStyle} onClick={saveCredentials}>Save Credentials</button>
             </div>
-        </div>
+            <Guide />
+        </motion.div>
     )
 }
 

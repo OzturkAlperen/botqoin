@@ -1,7 +1,7 @@
 import React from "react";
 import { Route } from "react-router-dom";
 import { withAuthenticationRequired } from "@auth0/auth0-react";
-import Redirection from "./Redirection";
+import Redirection from "../pages/Redirection";
 
 const ProtectedRoute = ({ component, ...args }) => (
   <Route
