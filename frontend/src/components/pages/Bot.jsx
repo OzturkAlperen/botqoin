@@ -148,7 +148,7 @@ class Bot extends React.Component {
             .then((respond => respond.json()))
             .then((data) => {
                 if (data.message === "success") {
-                    this.websocket = new WebSocket(`ws://35.74.55.82/api/ws/${this.id}`);
+                    this.websocket = new WebSocket(`wss://botqoin.tech/api/ws/${this.id}`);
                     this.websocketListener()
                     this.isStarted = true
                     this.s.current.style.backgroundColor = "#F5475D"
