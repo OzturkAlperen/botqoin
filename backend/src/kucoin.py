@@ -44,13 +44,12 @@ class Client:
         data = {}
         for k, v in kwargs.items():
             data[k] = v
-        data_json = json.dumps(data)
+        data_json = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
         now, signature = self._create_signature(method, endpoint, data_json)
         headers = {
             "KC-API-TIMESTAMP": str(now),
             "KC-API-SIGN": signature,
         }
-        kwargs.clear()
         try:
             return self._process_response(getattr(self.session, method.lower())(url, headers=headers, data=data_json))
         except requests.exceptions.RequestException as exception:
