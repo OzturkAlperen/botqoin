@@ -6,7 +6,7 @@ import App from './components/pages/App.jsx';
 
 ReactDOM.render(
     <BrowserRouter>
-        <Auth0Provider domain="botqoin.us.auth0.com" clientId="ko5MFeIevzSsxp5gzLnJe6DmbknPumIp" redirectUri={"http://botqoin.tech/"} audience="botqoin" scope="read:all">
+        <Auth0Provider domain="botqoin.us.auth0.com" clientId="ko5MFeIevzSsxp5gzLnJe6DmbknPumIp" redirectUri={"https://botqoin.tech/"} audience="botqoin" scope="read:all">
             <App />
         </Auth0Provider>
     </BrowserRouter>,
