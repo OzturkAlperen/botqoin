@@ -5,7 +5,7 @@ const UserGuide = () => {
         <div className="displaybox-large">
                 <h1>How to use botqoin?</h1>
                 <ol>
-                    <li>Choose the platform you want perform trade.</li>
+                    <li>Choose the platform you want to execute trade.</li>
                     <li>Set a sell method.
                         <ul>
                             <li>100 means all of the purchased tokens will be sold as a single piece at the desired profit percentage</li>
