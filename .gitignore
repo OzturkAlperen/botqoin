@@ -1,4 +1,5 @@
 # Project exclude paths
 /backend/additional/
 /backend/setup/
+/backend/venv/
 /frontend/node_modules/
