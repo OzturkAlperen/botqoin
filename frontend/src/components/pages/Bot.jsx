@@ -32,7 +32,7 @@ class Bot extends React.Component {
             message: "",
             symbol: "",
             status: ""};
-        this.id = Math.random().toString(36).slice(2);
+        this.id = null
         this.pp1 = createRef()
         this.pp2 = createRef()
         this.pp3 = createRef()
@@ -65,13 +65,30 @@ class Bot extends React.Component {
 
 
     async componentDidMount() {
-        this.mti.current.style.pointerEvents = "none"
-        window.addEventListener('beforeunload', this.componentCleanup);
+
         const { getAccessTokenSilently } = this.props.auth0;
         this.accessToken = await getAccessTokenSilently({
             audience: `botqoin`,
             scope: "read:all",
         })
+
+        await fetch('/api/user/ticket', {
+            headers: {
+                Authorization: `Bearer ${this.accessToken}`
+            },
+        })
+        .then((respond => respond.json()))
+        .then((data) => {
+            this.id = data
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+
+        this.websocket = new WebSocket(`wss://botqoin.tech/api/websocket/bot/${this.id}`);
+        await this.websocketListener()
+
+        window.addEventListener('beforeunload', this.componentCleanup);
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -91,18 +108,10 @@ class Bot extends React.Component {
     }
 
     componentCleanup() {
-        if (this.websocket instanceof WebSocket) {
-            this.websocket.close()
-        }
-        if (this.isStarted === true) {
-            fetch('/api/closedown', {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`
-                },
-            })
-            .catch((error) => {
-                console.log(error);
-            });
+        if (this.websocket !== undefined) {
+            if (this.websocket.readyState === WebSocket.OPEN) {
+                this.websocket.close()
+            }
         }
     }
 
@@ -114,59 +123,54 @@ class Bot extends React.Component {
     async triggerBot() {
 
         if (this.isStarted) {
-            await fetch('/api/closedown', {
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`
-                },
-            })
-            .catch((error) => {
-                console.log(error);
-            });
+            let unsubscribeData = {
+                'method': "UNSUBSCRIBE"
+            }
+
+            await this.websocket.send(JSON.stringify(unsubscribeData))
 
             this.isStarted = false
             this.s.current.style.backgroundColor = "#10CB81"
+
         } else {
-            let botInfo = {
-                'profit_percentage_1': this.pp1.current.value,
-                'profit_percentage_2': this.pp2.current.value,
-                'profit_percentage_3': this.pp3.current.value,
-                'trade_platform': this.state.tradePlatform,
-                'trade_pair': this.tp.current.value,
-                'sell_method': this.state.sellMethod,
-                'funds_quantity': this.fq.current.value,
+
+            let subscribeData = {
+                'method': 'SUBSCRIBE',
+                'params': {
+                    'profit_percentage_1': this.pp1.current.value,
+                    'profit_percentage_2': this.pp2.current.value,
+                    'profit_percentage_3': this.pp3.current.value,
+                    'trade_platform': this.state.tradePlatform,
+                    'trade_pair': this.tp.current.value,
+                    'sell_method': this.state.sellMethod,
+                    'funds_quantity': this.fq.current.value,
+                }
             }
 
-             await fetch('/api/startup', {
-                method: 'post',
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Accept': 'application/json',
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(botInfo),
-             })
-            .then((respond => respond.json()))
-            .then((data) => {
-                if (data.message === "success") {
-                    this.websocket = new WebSocket(`wss://botqoin.tech/api/ws/${this.id}`);
-                    this.websocketListener()
-                    this.isStarted = true
-                    this.s.current.style.backgroundColor = "#F5475D"
-                } else if (data.result === "fail") {
-                    console.log(data.result)
-                }
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-
+            this.websocket.send(JSON.stringify(subscribeData))
         }
     }
 
     async websocketListener() {
         this.websocket.onmessage = (event) => {
             const newData = JSON.parse(event.data)
-            this.setState({message: newData.message, symbol: newData.symbol, status: newData.status})
+            console.log(newData)
+            if (newData.message !== undefined) {
+                console.log("a")
+                this.setState({message: newData.message})
+            }
+            if (newData.symbol !== undefined) {
+                this.setState({symbol: newData.symbol})
+            }
+            if (newData.status !== undefined) {
+                this.setState({status: newData.status})
+            }
+            if (newData.signal !== undefined) {
+                if (newData.signal === "READY") {
+                    this.isStarted = true
+                    this.s.current.style.backgroundColor = "#F5475D"
+                }
+            }
         }
     }
 
