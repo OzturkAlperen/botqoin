@@ -2,8 +2,18 @@ import re
 import requests
 
 
-def message_analyzer(incoming_message: str, binance_trade_flag: bool, kucoin_trade_flag: bool, symbol_dictionary: dict,
+def message_analyzer(incoming_message: str, binance_client, kucoin_client, symbol_dictionary: dict,
                      trade_pair: str):
+    if binance_client is not None:
+        binance_trade_flag = True
+    else:
+        binance_trade_flag = False
+
+    if kucoin_client is not None:
+        kucoin_trade_flag = True
+    else:
+        kucoin_trade_flag = False
+
     selected_symbol = ""
     processed_message = re.sub(r'[^A-Za-z0-9 ]+', '', incoming_message)
     splitted_message = incoming_message.replace("<", "")
