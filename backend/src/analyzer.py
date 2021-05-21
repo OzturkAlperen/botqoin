@@ -2,8 +2,8 @@ import re
 import requests
 
 
-def message_analyzer(incoming_message: str, binance_client, kucoin_client, symbol_dictionary: dict,
-                     trade_pair: str):
+async def message_analyzer(incoming_message: str, binance_client, kucoin_client, symbol_dictionary: dict,
+                           trade_pair: str):
     if binance_client is not None:
         binance_trade_flag = True
     else:
