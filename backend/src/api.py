@@ -85,36 +85,45 @@ class DiscordManager:
     def client(self):
         return discord.Client(token="NTYyOTc0OTMzMDg1MzIzMjY0.YEPkaQ.qtaksxyYJQhNvWSLx2APvOZraCM")
 
-    async def on_message(self, message):
+    @staticmethod
+    async def on_message(message):
+        tasks = []
         for client in clients:
             if client.is_active:
                 if message.channel_id in client.discord_channels:
-                    print("DC_TIMESTAMP: {} - LOCAL_TIMESTAMP: {}".format(message.timestamp, datetime.datetime.now()))
-                    await self._handle_message(message.content, client)
                     try:
-                        await self._handle_message(message.embeds[0].fields[0].value, client)
+                        field_zero = message.embeds[0].fields[0].value
                     except:
-                        pass
+                        field_zero = ""
                     try:
-                        await self._handle_message(message.embeds[0].description, client)
+                        description = message.embeds[0].description
                     except:
-                        pass
-                    if client.is_active:
-                        await client.websocket.send_json({"message": message.content,
-                                                          "symbol": "------",
-                                                          "status": "No symbol found, waiting for symbol scrape."})
+                        description = ""
+                    symbol_check_fields = [message.content,
+                                           description,
+                                           field_zero]
+                    symbol = ""
+                    for check_field in symbol_check_fields:
+                        symbol = await message_analyzer(check_field,
+                                                        client.binance_client, client.kucoin_client,
+                                                        symbol_dictionary,
+                                                        client.trade_pair)
+                        if symbol != "":
+                            client.is_active = False
+                            await client.websocket.send_json({"message": check_field,
+                                                              "symbol": symbol,
+                                                              "status": "Symbol found, initializing trade."})
+                            break
 
-    @staticmethod
-    async def _handle_message(message, client):
-        if client.is_active:
-            symbol = message_analyzer(message, client.binance_client, client.kucoin_client, symbol_dictionary,
-                                      client.trade_pair)
-            if symbol != "":
-                client.is_active = False
-                await client.websocket.send_json({"message": message,
-                                                  "symbol": symbol,
-                                                  "status": "Symbol fetched, executing trade."})
-                await initialize_trade(symbol, client)
+                    if symbol != "":
+                        task = asyncio.ensure_future(initialize_trade(symbol, client))
+                        tasks.append(task)
+                    else:
+                        await client.websocket.send_json({"message": message.content,
+                                                          "symbol": "----------",
+                                                          "status": "Message parsed, no symbol has found."})
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def start(self):
         await self.client.start()
@@ -131,6 +140,7 @@ class TelegramManager:
 
     @staticmethod
     async def on_message(event):
+        tasks = []
         for client in clients:
             if client.is_active:
                 if event.chat.username in client.telegram_channels:
@@ -139,14 +149,17 @@ class TelegramManager:
                                               client.trade_pair)
                     if symbol != "":
                         client.is_active = False
+                        task = asyncio.ensure_future(initialize_trade(symbol, client))
+                        tasks.append(task)
                         await client.websocket.send_json({"message": event.message.message,
                                                           "symbol": symbol,
-                                                          "status": "Symbol fetched, executing trade."})
-                        await initialize_trade(symbol, client)
+                                                          "status": "Symbol found, initializing trade."})
                     else:
                         await client.websocket.send_json({"message": event.message.message,
-                                                          "symbol": "------",
-                                                          "status": "No symbol found, waiting for symbol scrape."})
+                                                          "symbol": "----------",
+                                                          "status": "Message parsed, no symbol has found."})
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def start(self):
         await self.client.start()
@@ -262,7 +275,7 @@ async def initialize_trade(symbol, user_client):
             ss2 = await precision(pss, symbol_dictionary[symbol][1])
         return ss1, ss2
 
-    trade_initialize_time = datetime.datetime.now()
+    trade_initialize_time = "GMT => {} || MS => {}".format(datetime.datetime.now(), time.time() * 1000)
 
     start_timestamp = time.time() * 1000
 
@@ -395,11 +408,11 @@ async def initialize_trade(symbol, user_client):
     if kucoin_client is not None:
 
         try:
-            buy_order = kucoin_client.create_order(order_side="buy",
-                                                   order_type="market",
-                                                   order_symbol=symbol,
-                                                   order_funds=funds_quantity,)
-        except kucoin.APIException as exception:
+            buy_order = await kucoin_client.create_order(order_side="buy",
+                                                         order_type="market",
+                                                         order_symbol=symbol,
+                                                         order_funds=funds_quantity,)
+        except kucoin.KucoinAPIException as exception:
             exception = str(exception) + " @ Market Buy Order"
             print(exception)
             await user_client.websocket.send_json({"status": exception})
@@ -408,11 +421,11 @@ async def initialize_trade(symbol, user_client):
         buy_end_timestamp = time.time() * 1000
 
         buy_order_id = buy_order['orderId']
-        buy_order = kucoin_client.get_order(order_id=buy_order_id)
+        buy_order = await kucoin_client.get_order(order_id=buy_order_id)
 
         buy_size = float(buy_order['dealSize'])
         while buy_size == 0:
-            buy_order = kucoin_client.get_order(order_id=buy_order_id)
+            buy_order = await kucoin_client.get_order(order_id=buy_order_id)
             buy_size = float(buy_order['dealSize'])
 
         buy_price = (float(buy_order['dealFunds']) / float(buy_size))
@@ -424,12 +437,12 @@ async def initialize_trade(symbol, user_client):
         if sell_method == "100":
             sell_100_size = await precision(buy_size, symbol_dictionary[symbol][1])
             try:
-                sell_order = kucoin_client.create_order(order_side="sell",
-                                                        order_type="limit",
-                                                        order_symbol=symbol,
-                                                        order_size=sell_100_size,
-                                                        order_price=sell_price_1)
-            except kucoin.APIException as exception:
+                sell_order = await kucoin_client.create_order(order_side="sell",
+                                                              order_type="limit",
+                                                              order_symbol=symbol,
+                                                              order_size=sell_100_size,
+                                                              order_price=sell_price_1)
+            except kucoin.KucoinAPIException as exception:
                 exception = str(exception) + " @ Limit Sell Order"
                 print(exception)
                 await user_client.websocket.send_json({"status": exception})
@@ -449,7 +462,7 @@ async def initialize_trade(symbol, user_client):
             await user_client.websocket.send_json({"status": result})
 
             sell_order_id = sell_order['orderId']
-            sell_order = kucoin_client.get_order(order_id=sell_order_id)
+            sell_order = await kucoin_client.get_order(order_id=sell_order_id)
 
             print(buy_order)
             print("Executed in {}ms".format(buy_time))
@@ -459,17 +472,17 @@ async def initialize_trade(symbol, user_client):
         elif sell_method == "5050":
             sell_5050_size_1, sell_5050_size_2 = await calculate_sell_sizes(buy_size)
             try:
-                sell_order_1 = kucoin_client.create_order(order_side="sell",
-                                                          order_type="limit",
-                                                          order_symbol=symbol,
-                                                          order_size=sell_5050_size_1,
-                                                          order_price=sell_price_1)
-                sell_order_2 = kucoin_client.create_order(order_side="sell",
-                                                          order_type="limit",
-                                                          order_symbol=symbol,
-                                                          order_size=sell_5050_size_2,
-                                                          order_price=sell_price_2)
-            except kucoin.APIException as exception:
+                sell_order_1 = await kucoin_client.create_order(order_side="sell",
+                                                                order_type="limit",
+                                                                order_symbol=symbol,
+                                                                order_size=sell_5050_size_1,
+                                                                order_price=sell_price_1)
+                sell_order_2 = await kucoin_client.create_order(order_side="sell",
+                                                                order_type="limit",
+                                                                order_symbol=symbol,
+                                                                order_size=sell_5050_size_2,
+                                                                order_price=sell_price_2)
+            except kucoin.KucoinAPIException as exception:
                 exception = str(exception) + " @ Limit Sell Orders"
                 print(exception)
                 await user_client.websocket.send_json({"status": exception})
@@ -491,8 +504,8 @@ async def initialize_trade(symbol, user_client):
 
             sell_order_1_id = sell_order_1['orderId']
             sell_order_2_id = sell_order_2['orderId']
-            sell_order_1 = kucoin_client.get_order(order_id=sell_order_1_id)
-            sell_order_2 = kucoin_client.get_order(order_id=sell_order_2_id)
+            sell_order_1 = await kucoin_client.get_order(order_id=sell_order_1_id)
+            sell_order_2 = await kucoin_client.get_order(order_id=sell_order_2_id)
 
             print(buy_order)
             print("Executed in {}ms".format(buy_time))
@@ -503,22 +516,22 @@ async def initialize_trade(symbol, user_client):
         elif sell_method == "502525":
             sell_502525_size_1, sell_502525_size_2 = await calculate_sell_sizes(buy_size)
             try:
-                sell_order_1 = kucoin_client.create_order(order_side="sell",
-                                                          order_type="limit",
-                                                          order_symbol=symbol,
-                                                          order_size=sell_502525_size_1,
-                                                          order_price=sell_price_1)
-                sell_order_2 = kucoin_client.create_order(order_side="sell",
-                                                          order_type="limit",
-                                                          order_symbol=symbol,
-                                                          order_size=sell_502525_size_2,
-                                                          order_price=sell_price_2)
-                sell_order_3 = kucoin_client.create_order(order_side="sell",
-                                                          order_type="limit",
-                                                          order_symbol=symbol,
-                                                          order_size=sell_502525_size_2,
-                                                          order_price=sell_price_3)
-            except kucoin.APIException as exception:
+                sell_order_1 = await kucoin_client.create_order(order_side="sell",
+                                                                order_type="limit",
+                                                                order_symbol=symbol,
+                                                                order_size=sell_502525_size_1,
+                                                                order_price=sell_price_1)
+                sell_order_2 = await kucoin_client.create_order(order_side="sell",
+                                                                order_type="limit",
+                                                                order_symbol=symbol,
+                                                                order_size=sell_502525_size_2,
+                                                                order_price=sell_price_2)
+                sell_order_3 = await kucoin_client.create_order(order_side="sell",
+                                                                order_type="limit",
+                                                                order_symbol=symbol,
+                                                                order_size=sell_502525_size_2,
+                                                                order_price=sell_price_3)
+            except kucoin.KucoinAPIException as exception:
                 exception = str(exception) + " @ Limit Sell Orders"
                 print(exception)
                 await user_client.websocket.send_json({"status": exception})
@@ -542,9 +555,9 @@ async def initialize_trade(symbol, user_client):
             sell_order_1_id = sell_order_1['orderId']
             sell_order_2_id = sell_order_2['orderId']
             sell_order_3_id = sell_order_3['orderId']
-            sell_order_1 = kucoin_client.get_order(order_id=sell_order_1_id)
-            sell_order_2 = kucoin_client.get_order(order_id=sell_order_2_id)
-            sell_order_3 = kucoin_client.get_order(order_id=sell_order_3_id)
+            sell_order_1 = await kucoin_client.get_order(order_id=sell_order_1_id)
+            sell_order_2 = await kucoin_client.get_order(order_id=sell_order_2_id)
+            sell_order_3 = await kucoin_client.get_order(order_id=sell_order_3_id)
 
             print(buy_order)
             print("Executed in {}ms".format(buy_time))
@@ -574,6 +587,7 @@ async def _generate_exchange_client(credentials, trade_platform):
         client = kucoin.Client(credentials['kucoin_api_key'],
                                credentials['kucoin_api_secret'],
                                credentials['kucoin_api_passphrase'])
+        await client.open()
     else:
         return
 
@@ -608,8 +622,6 @@ async def _handle_new_client(bot_settings, websocket, user_id):
     else:
         return
     clients[new_client] = user_id
-    print("A NEW CLIENT HAS BEEN GENERATED")
-    print(clients)
 
 
 async def _handle_metadata_request(method: str, user_id: str, user_metadata: UserMetadata = None):
@@ -646,11 +658,15 @@ async def websocket_bot(websocket: WebSocket, ticket):
             elif data['method'] == "UNSUBSCRIBE":
                 for client, id in list(clients.items()):
                     if id == user_id:
+                        if client.kucoin_client is not None:
+                            await client.kucoin_client.close()
                         del clients[client]
     except (ConnectionClosedError, WebSocketException, WebSocketDisconnect):
         websocket_manager.disconnect(websocket)
         for client, id in list(clients.items()):
             if id == user_id:
+                if client.kucoin_client is not None:
+                    await client.kucoin_client.close()
                 del clients[client]
 
 
