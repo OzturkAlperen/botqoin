@@ -83,7 +83,7 @@ class DiscordManager:
 
     @cached_property
     def client(self):
-        return discord.Client(token="NTYyOTc0OTMzMDg1MzIzMjY0.YEPkaQ.qtaksxyYJQhNvWSLx2APvOZraCM")
+        return discord.Client(token="placeholder")
 
     @staticmethod
     async def on_message(message):
@@ -136,7 +136,7 @@ class TelegramManager:
 
     @cached_property
     def client(self):
-        return telethon.TelegramClient('botQoin', 3112726, "15d793b32dc85708032b761fbaec12f6")
+        return telethon.TelegramClient('botQoin', 0000000, "placeholder")
 
     @staticmethod
     async def on_message(event):
@@ -568,10 +568,10 @@ async def initialize_trade(symbol, user_client):
 
 
 async def _get_auth0_access_token():
-    url = "https://botqoin.us.auth0.com/oauth/token"
-    data = json.dumps({"client_id": "c3gy7WhgX6HIjdHzTWdRn6vQ8BIz2iIg",
-                       "client_secret": "HodmVihOGeuOq_8jsgcAWzaT4H4v0SYF5FIuimv-gJsTBuzUcmc2JvQWUnwzNMOj",
-                       "audience": "https://botqoin.us.auth0.com/api/v2/",
+    url = "https://placeholder.us.auth0.com/oauth/token"
+    data = json.dumps({"client_id": "placeholder",
+                       "client_secret": "placeholder",
+                       "audience": "https://placeholder.us.auth0.com/api/v2/",
                        "grant_type": "client_credentials"})
     headers = {"content-type": "application/json"}
     response = requests.request("POST", url, data=data, headers=headers)
